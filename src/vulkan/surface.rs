@@ -7,7 +7,7 @@ use winit::window::Window;
 #[allow(dead_code)]
 pub struct VulkanApp {
     entry: Entry,
-    instance: Instance,
+    pub instance: Instance,
     surface: vk::SurfaceKHR,
 }
 
