@@ -1,8 +1,13 @@
 use ash::vk;
 use ash::Instance;
 
+#[allow(unused)]
 pub struct VulkanPhysicalDevice {
     pub physical_device: vk::PhysicalDevice,
+    pub swap_chain: vk::SwapchainKHR,
+    pub swap_chain_images: Vec<vk::Image>,
+    pub swap_chain_image_views: Vec<vk::ImageView>,
+    pub render_pass: vk::RenderPass,
 }
 
 impl VulkanPhysicalDevice {
@@ -19,7 +24,18 @@ impl VulkanPhysicalDevice {
             .find(|&device| Self::is_device_suitable(instance, device))
             .expect("No suitable GPU found!");
 
-        VulkanPhysicalDevice { physical_device }
+        let swap_chain = Self::create_swap_chain(instance, physical_device);
+        let swap_chain_images = vec![];
+        let swap_chain_image_views = vec![];
+        let render_pass = Self::create_render_pass(instance, physical_device);
+
+        VulkanPhysicalDevice {
+            physical_device,
+            swap_chain,
+            swap_chain_images,
+            swap_chain_image_views,
+            render_pass
+        }
     }
 
     fn is_device_suitable(instance: &Instance, device: vk::PhysicalDevice) -> bool {
@@ -30,5 +46,17 @@ impl VulkanPhysicalDevice {
         let supports_geometry_shader = features.geometry_shader == vk::TRUE;
 
         is_discrete_gpu && supports_geometry_shader
+    }
+
+    #[allow(unused)]
+    fn create_swap_chain(instance: &Instance, device: vk::PhysicalDevice) -> vk::SwapchainKHR {
+        // Placeholder for swap chain creation logic
+        vk::SwapchainKHR::null()
+    }
+
+    #[allow(unused)]
+    fn create_render_pass(instance: &Instance, device: vk::PhysicalDevice) -> vk::RenderPass {
+        // Placeholder for render pass creation logic
+        vk::RenderPass::null()
     }
 }
