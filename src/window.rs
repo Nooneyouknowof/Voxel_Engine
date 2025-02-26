@@ -5,7 +5,7 @@ use winit::window::{Window, WindowId};
 
 #[derive(Default)]
 pub struct App {
-    window: Option<Window>,
+    pub window: Option<Window>,
 }
 
 impl ApplicationHandler for App {
