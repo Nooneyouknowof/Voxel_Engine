@@ -2,6 +2,7 @@ use ash::vk;
 use ash::Instance;
 
 #[allow(unused)]
+#[derive(Debug)]
 pub struct VulkanPhysicalDevice {
     pub physical_device: vk::PhysicalDevice,
     pub swap_chain: vk::SwapchainKHR,
@@ -18,6 +19,7 @@ impl VulkanPhysicalDevice {
                 .enumerate_physical_devices()
                 .expect("Failed to enumerate physical devices!");
         };
+        println!("GPU Devices: {:?}", devices);
 
         let physical_device = devices
             .into_iter()

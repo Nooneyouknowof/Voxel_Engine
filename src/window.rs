@@ -1,8 +1,9 @@
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
-use winit::window;
 use winit::{event_loop::ActiveEventLoop, window::{Window, WindowId}};
 
+
+use crate::vulkan::device::VulkanPhysicalDevice;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -70,6 +71,11 @@ impl ApplicationHandler for AppEvents {
         self.surface = Some(surface);
 
         println!("Vulkan surface successfully created!");
+
+        let instance = self.instance.as_ref().unwrap();
+        let physical_device = VulkanPhysicalDevice::pick_physical_device(&instance);
+
+        println!("Physical Device: {:?}", physical_device);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
@@ -101,8 +107,11 @@ impl ApplicationHandler for AppEvents {
 }
 
 fn required_extensions(window: &Window) -> Vec<*const c_char> {
+    let mut extensions = Vec::new();
+    // Get required extensions from winit
     let surface_extensions = ash_window::enumerate_required_extensions(window.display_handle().unwrap().into()).unwrap();
-    let mut extensions = Vec::with_capacity(surface_extensions.len());
     extensions.extend(surface_extensions.iter().copied());
+    // Always include VK_KHR_SURFACE
+    // extensions.push(vk::KhrSurfaceFn::name().as_ptr());
     extensions
 }
