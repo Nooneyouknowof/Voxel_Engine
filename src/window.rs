@@ -3,7 +3,7 @@ use winit::event::WindowEvent;
 use winit::{event_loop::ActiveEventLoop, window::{Window, WindowId}};
 
 
-use crate::vulkan::{device::*, swapchain};
+use crate::vulkan::device::*;
 use crate::vulkan::swapchain::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
@@ -100,7 +100,7 @@ impl ApplicationHandler for AppEvents {
 
         
         
-        println!("Swapchain: {:?}", swapchain);
+        println!("created Swapchain");
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
@@ -138,6 +138,7 @@ fn required_extensions(window: &Window) -> Vec<*const c_char> {
     let surface_extensions = ash_window::enumerate_required_extensions(window.display_handle().unwrap().into()).unwrap();
     extensions.extend(surface_extensions.iter().copied());
     // Always include VK_KHR_SURFACE
-    extensions.push(ash::khr::surface::NAME.as_ptr());
+    // extensions.push(ash::khr::surface::NAME.as_ptr());
+    // extensions.push(ash::khr::swapchain::NAME.as_ptr());
     extensions
 }

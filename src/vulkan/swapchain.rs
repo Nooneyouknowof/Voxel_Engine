@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+use std::ptr;
+
 use ash::vk;
 use ash::Instance;
 use winit::window::Window;
@@ -6,6 +9,15 @@ pub struct SwapChainSupportDetails {
     pub capabilities: vk::SurfaceCapabilitiesKHR,
     pub formats: Vec<vk::SurfaceFormatKHR>,
     pub present_modes: Vec<vk::PresentModeKHR>,
+}
+
+#[allow(unused)]
+pub struct SwapChainStuff {
+    swapchain_loader: ash::khr::swapchain::Device,
+    swapchain: vk::SwapchainKHR,
+    swapchain_images: Vec<vk::Image>,
+    swapchain_format: vk::Format,
+    swapchain_extent: vk::Extent2D,
 }
 
 fn query_swapchain_support(physical_device: vk::PhysicalDevice, surface: vk::SurfaceKHR, surface_loader: ash::khr::surface::Instance) -> SwapChainSupportDetails {
@@ -34,7 +46,7 @@ fn choose_swapchain_format(available_formats: &Vec<vk::SurfaceFormatKHR>) -> vk:
             return available_format.clone();
         }
     }
-    return available_formats.first().unwrap().clone();
+    return available_formats.first().unwrap().clone(); // Default
 }
 
 fn choose_swapchain_present_mode(available_present_modes: &Vec<vk::PresentModeKHR>) -> vk::PresentModeKHR {
@@ -43,7 +55,7 @@ fn choose_swapchain_present_mode(available_present_modes: &Vec<vk::PresentModeKH
             return available_present_mode;
         }
     }
-    vk::PresentModeKHR::FIFO
+    vk::PresentModeKHR::FIFO // Default
 }
 
 fn choose_swapchain_extent(capabilities: &vk::SurfaceCapabilitiesKHR, window: &Window) -> vk::Extent2D {
@@ -74,7 +86,7 @@ pub fn create_swap_chain(
     surface_loader: ash::khr::surface::Instance,
     queue_family: (u32, u32),
     window: &Window
-) -> vk::SwapchainKHR {
+) -> SwapChainStuff {
     // Placeholder for swap chain creation logic
     let swapchain_support = query_swapchain_support(physical_device, surface, surface_loader.clone());
 
@@ -105,6 +117,8 @@ pub fn create_swap_chain(
 
     let swapchain_create_info = vk::SwapchainCreateInfoKHR {
         s_type: vk::StructureType::SWAPCHAIN_CREATE_INFO_KHR,
+        p_next: ptr::null(),
+        flags: vk::SwapchainCreateFlagsKHR::empty(),
         surface,
         min_image_count: image_count,
         image_color_space: surface_format.color_space,
@@ -118,18 +132,31 @@ pub fn create_swap_chain(
         composite_alpha: vk::CompositeAlphaFlagsKHR::OPAQUE,
         present_mode,
         clipped: vk::TRUE,
+        old_swapchain: vk::SwapchainKHR::null(),
         image_array_layers: 1,
-        ..Default::default()
+        _marker: PhantomData
     };
 
     let swapchain_loader = ash::khr::swapchain::Device::new(instance, &device);
-        let swapchain = unsafe {
-            swapchain_loader
-                .create_swapchain(&swapchain_create_info, None)
-                .expect("Failed to create Swapchain!")
-        };
+    let swapchain = unsafe {
+        swapchain_loader
+            .create_swapchain(&swapchain_create_info, None)
+            .expect("Failed to create Swapchain!")
+    };
 
-    vk::SwapchainKHR::null()
+    let swapchain_images = unsafe {
+        swapchain_loader
+            .get_swapchain_images(swapchain)
+            .expect("Failed to create Swapchain!")
+    };
+
+    SwapChainStuff {
+        swapchain_loader,
+        swapchain,
+        swapchain_format: surface_format.format,
+        swapchain_extent: extent,
+        swapchain_images
+    }
 }
 
 pub fn create_render_pass(instance: &Instance, device: vk::PhysicalDevice) -> vk::RenderPass {
