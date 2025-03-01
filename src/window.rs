@@ -3,7 +3,7 @@ use winit::event::WindowEvent;
 use winit::{event_loop::ActiveEventLoop, window::{Window, WindowId}};
 
 
-use crate::vulkan::device::VulkanPhysicalDevice;
+use crate::vulkan::device::VulkanApp;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -15,6 +15,7 @@ pub struct AppEvents {
     instance: Option<Instance>,  // Store Vulkan instance
     surface: Option<vk::SurfaceKHR>,  // Store Vulkan surface
     entry: Option<Entry>,  // Store Vulkan entry
+    logical_device: Option<ash::Device>
 }
 
 impl ApplicationHandler for AppEvents {
@@ -65,21 +66,23 @@ impl ApplicationHandler for AppEvents {
                 None
             ).expect("Failed to create Vulkan surface")
         };
-        let surface_loader = ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap());
-
+        
         self.entry = Some(entry);
         self.instance = Some(instance);
         self.surface = Some(surface);
-
-        println!("Vulkan surface successfully created!");
-
+        
+        let surface_loader = ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap());
+        println!("Vulkan surface & loader successfully created!");
+        
         let instance = self.instance.as_ref().unwrap();
-        let device = VulkanPhysicalDevice::pick_physical_device(&instance);
-
+        let device = VulkanApp::pick_physical_device(&instance);
         println!("Physical Device: {:?}", device);
 
-        let queue_family = VulkanPhysicalDevice::find_queue_families(instance, device.physical_device, *self.surface.as_ref().unwrap());
+        let queue_family = VulkanApp::find_queue_families(instance, device.physical_device, *self.surface.as_ref().unwrap(), surface_loader);
+        let logical_device = VulkanApp::create_logical_device(instance, device.physical_device, queue_family);
+        self.logical_device = Some(logical_device.0);
 
+        println!("Logical Device properties: {:?}, {:?}", logical_device.1, logical_device.2);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
@@ -97,6 +100,7 @@ impl ApplicationHandler for AppEvents {
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {
+        unsafe { self.logical_device.as_ref().unwrap().destroy_device(None) };
         println!("Exiting window");
         // Destroy Vulkan resources safely
         // if let Some(instance) = &self.instance {
@@ -116,6 +120,6 @@ fn required_extensions(window: &Window) -> Vec<*const c_char> {
     let surface_extensions = ash_window::enumerate_required_extensions(window.display_handle().unwrap().into()).unwrap();
     extensions.extend(surface_extensions.iter().copied());
     // Always include VK_KHR_SURFACE
-    // extensions.push(vk::KhrSurfaceFn::name().as_ptr());
+    extensions.push(ash::khr::surface::NAME.as_ptr());
     extensions
 }
