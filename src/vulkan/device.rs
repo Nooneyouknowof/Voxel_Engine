@@ -27,8 +27,8 @@ impl VulkanPhysicalDevice {
             let properties = unsafe { instance.get_physical_device_properties(device) };
             let features = unsafe { instance.get_physical_device_features(device) };
 
-            println!("Device: {:?} ({:?}) API_VER: {:?}", 
-                unsafe { std::ffi::CStr::from_ptr(properties.device_name.as_ptr()) }, 
+            println!("Device: {:?} ({:?}) API_VER: {:?}",
+                unsafe { std::ffi::CStr::from_ptr(properties.device_name.as_ptr()) },
                 properties.device_type,
                 properties.api_version
             );
@@ -64,39 +64,17 @@ impl VulkanPhysicalDevice {
         }
     }
 
-    // fn find_queue_families(instance: &ash::Instance, device: vk::PhysicalDevice, surface: vk::SurfaceKHR, surface_loader: &ash::extensions::khr::Surface) -> (u32, u32) {
-    //     let queue_families = unsafe { instance.get_physical_device_queue_family_properties(device) };
-    
-    //     let mut graphics_queue_index = None;
-    //     let mut present_queue_index = None;
-    
-    //     for (index, queue_family) in queue_families.iter().enumerate() {
-    //         let index = index as u32;
-    
-    //         // Check for graphics support
-    //         if queue_family.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
-    //             graphics_queue_index = Some(index);
-    //         }
-    
-    //         // Check for presentation support
-    //         let present_support = unsafe {
-    //             surface_loader.get_physical_device_surface_support(device, index, surface)
-    //         }.unwrap_or(false);
-    
-    //         if present_support {
-    //             present_queue_index = Some(index);
-    //         }
-    
-    //         if graphics_queue_index.is_some() && present_queue_index.is_some() {
-    //             break;
-    //         }
-    //     }
-    
-    //     (
-    //         graphics_queue_index.expect("Failed to find a graphics queue family!"),
-    //         present_queue_index.expect("Failed to find a present queue family!")
-    //     )
-    // }    
+    pub fn find_queue_families(instance: &Instance, device: vk::PhysicalDevice, surface: vk::SurfaceKHR, ) {
+        let queue_families = unsafe {instance.get_physical_device_queue_family_properties(device)};
+
+        let mut graphics_family = None;
+        let mut present_family = None;
+
+        
+
+    }
+
+
 
     #[allow(unused)]
     fn create_swap_chain(instance: &Instance, device: vk::PhysicalDevice) -> vk::SwapchainKHR {

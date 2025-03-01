@@ -65,6 +65,7 @@ impl ApplicationHandler for AppEvents {
                 None
             ).expect("Failed to create Vulkan surface")
         };
+        let surface_loader = ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap());
 
         self.entry = Some(entry);
         self.instance = Some(instance);
@@ -73,9 +74,12 @@ impl ApplicationHandler for AppEvents {
         println!("Vulkan surface successfully created!");
 
         let instance = self.instance.as_ref().unwrap();
-        let physical_device = VulkanPhysicalDevice::pick_physical_device(&instance);
+        let device = VulkanPhysicalDevice::pick_physical_device(&instance);
 
-        println!("Physical Device: {:?}", physical_device);
+        println!("Physical Device: {:?}", device);
+
+        let queue_family = VulkanPhysicalDevice::find_queue_families(instance, device.physical_device, *self.surface.as_ref().unwrap());
+
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
