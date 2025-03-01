@@ -3,7 +3,8 @@ use winit::event::WindowEvent;
 use winit::{event_loop::ActiveEventLoop, window::{Window, WindowId}};
 
 
-use crate::vulkan::device::VulkanApp;
+use crate::vulkan::{device::*, swapchain};
+use crate::vulkan::swapchain::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -13,7 +14,10 @@ use std::{ffi::CString, os::raw::c_char};
 pub struct AppEvents {
     window: Option<Window>,
     instance: Option<Instance>,  // Store Vulkan instance
-    surface: Option<vk::SurfaceKHR>,  // Store Vulkan surface
+    surface: vk::SurfaceKHR,  // Store Vulkan surface
+    surface_loader: Option<ash::khr::surface::Instance>,
+    swapchain: vk::SwapchainKHR,
+    swapchain_loader: Option<ash::khr::swapchain::Instance>,
     entry: Option<Entry>,  // Store Vulkan entry
     logical_device: Option<ash::Device>
 }
@@ -69,26 +73,40 @@ impl ApplicationHandler for AppEvents {
         
         self.entry = Some(entry);
         self.instance = Some(instance);
-        self.surface = Some(surface);
+        self.surface = surface;
+        self.surface_loader = Some(ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap()));
         
-        let surface_loader = ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap());
         println!("Vulkan surface & loader successfully created!");
         
         let instance = self.instance.as_ref().unwrap();
-        let device = VulkanApp::pick_physical_device(&instance);
-        println!("Physical Device: {:?}", device);
+        let physical_device = pick_physical_device(&instance);
 
-        let queue_family = VulkanApp::find_queue_families(instance, device.physical_device, *self.surface.as_ref().unwrap(), surface_loader);
-        let logical_device = VulkanApp::create_logical_device(instance, device.physical_device, queue_family);
+        let queue_family = find_queue_families(instance, physical_device, 
+            self.surface, self.surface_loader.as_ref().unwrap().clone());
+        let logical_device = create_logical_device(instance, physical_device, queue_family);
         self.logical_device = Some(logical_device.0);
-
+        
         println!("Logical Device properties: {:?}, {:?}", logical_device.1, logical_device.2);
+        
+        let swapchain = create_swap_chain(
+            instance, 
+            self.logical_device.as_ref().unwrap().clone(), 
+            physical_device, 
+            surface, 
+            self.surface_loader.as_ref().unwrap().clone(), 
+            queue_family,
+            window
+        );
+
+        
+        
+        println!("Swapchain: {:?}", swapchain);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => {
-                println!("The close button was pressed");
+                println!("\nThe close button was pressed");
                 event_loop.exit();
             }
 
@@ -99,16 +117,16 @@ impl ApplicationHandler for AppEvents {
         }
     }
 
+    // fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
+        
+    // }
+
     fn exiting(&mut self, _: &ActiveEventLoop) {
         // Destroy Vulkan resources safely
         unsafe { self.logical_device.as_ref().unwrap().destroy_device(None) };
+        unsafe {self.surface_loader.as_ref().unwrap().destroy_surface(self.surface, None)};
         if let Some(instance) = &self.instance {
-            if let Some(surface) = self.surface.take() {
-                unsafe {
-                    let surface_loader = ash::khr::surface::Instance::new(self.entry.as_ref().unwrap(), instance);
-                    surface_loader.destroy_surface(surface, None);
-                }
-            }
+            unsafe {instance.destroy_instance(None)};
         }
         println!("Exiting window");
     }
