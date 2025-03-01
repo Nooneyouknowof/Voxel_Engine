@@ -1,4 +1,4 @@
-# **Project Overview: Infinite Voxel Roguelike**
+# **Project Overview: Infinite Voxel Roguelike (Sage Zinnia)**
 
 ## **Concept**
 An infinite voxel-based roguelike where the world dynamically reacts to the player's choices. The game features a hidden **karma system**, emergent AI-driven NPCs, and a deep world-building focus. Players start as mortals but must eventually **kill God and take His place**, unlocking **Creative Mode** with new world-altering mechanics. The game blends **magic and science**, rich lore, and immersive sound design to create a truly unique experience.
@@ -15,9 +15,35 @@ An infinite voxel-based roguelike where the world dynamically reacts to the play
 
 ## **Phase 1: Core Engine Setup**
 ### **Graphics & Vulkan Implementation**
-- Implement **Physical Device Selection** (Choose optimal GPU for Vulkan)
-- Create **Swap Chain & Render Pass**
-- Implement **Basic Mesh Rendering** (Voxel rendering framework)
+1. Instance Creation  
+2. Validation Layers  
+3. Physical Device Selection  
+4. Logical Device  
+5. Window Surface  
+6. Swap Chain Creation  
+7. Swap Chain Recreation  
+8. Image View  
+9. Render Passes  
+10. Shader Modules  
+11. Fixed Functions  
+12. Graphics Pipeline  
+13. Graphics Pipeline Complete  
+14. Framebuffers  
+15. Command Buffers  
+16. Hello Triangle  
+17. Vertex Input  
+18. Vertex Buffer  
+19. Index Buffer  
+20. Staging Buffer  
+21. Descriptor Layout  
+22. Descriptor Sets  
+23. Texture Image  
+24. Sampler  
+25. Texture Mapping  
+26. Depth Buffering  
+27. Mipmapping  
+28. Multisampling  
+29. Model Loading
 
 ## **Phase 2: World & Physics**
 ### **Voxel Engine & Terrain Generation**

@@ -100,17 +100,17 @@ impl ApplicationHandler for AppEvents {
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {
-        unsafe { self.logical_device.as_ref().unwrap().destroy_device(None) };
-        println!("Exiting window");
         // Destroy Vulkan resources safely
-        // if let Some(instance) = &self.instance {
-        //     if let Some(surface) = self.surface.take() {
-        //         unsafe {
-        //             let surface_loader = ash::khr::Surface::new(self.entry.as_ref().unwrap(), instance);
-        //             surface_loader.destroy_surface(surface, None);
-        //         }
-        //     }
-        // }
+        unsafe { self.logical_device.as_ref().unwrap().destroy_device(None) };
+        if let Some(instance) = &self.instance {
+            if let Some(surface) = self.surface.take() {
+                unsafe {
+                    let surface_loader = ash::khr::surface::Instance::new(self.entry.as_ref().unwrap(), instance);
+                    surface_loader.destroy_surface(surface, None);
+                }
+            }
+        }
+        println!("Exiting window");
     }
 }
 
