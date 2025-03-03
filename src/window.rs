@@ -8,7 +8,7 @@ use crate::vulkan::swapchain::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use std::ffi::CStr;
+// use std::ffi::CStr;
 use std::{ffi::CString, os::raw::c_char};
 
 #[derive(Default)]
@@ -46,11 +46,11 @@ impl ApplicationHandler for AppEvents {
 
         // Get required extensions from winit
         let extension_names = required_extensions(window);
-        println!("Required Extensions for winit: ");
-        for ext in &extension_names {
-            let ext_name = unsafe { CStr::from_ptr(ext.clone()) };
-            println!("- {}", ext_name.to_string_lossy());
-        }
+        // println!("Required Extensions for winit: "); // Debug
+        // for ext in &extension_names {
+        //     let ext_name = unsafe { CStr::from_ptr(ext.clone()) };
+        //     println!("- {}", ext_name.to_string_lossy());
+        // }
 
         let instance_info = vk::InstanceCreateInfo {
             s_type: vk::StructureType::INSTANCE_CREATE_INFO,
@@ -107,11 +107,16 @@ impl ApplicationHandler for AppEvents {
         self.swapchain = swapchain_stuff.swapchain;
         self.swapchain_loader = Some(swapchain_stuff.swapchain_loader);
         
-        println!("created Swapchain");
+        println!("Created Swapchain");
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         match event {
+            WindowEvent::Resized(_) => {
+                let window = self.window.as_ref().unwrap();
+                println!("Window was resized: {:?}", window.inner_size());
+            }
+
             WindowEvent::CloseRequested => {
                 println!("\nThe close button was pressed");
                 event_loop.exit();
@@ -124,17 +129,11 @@ impl ApplicationHandler for AppEvents {
         }
     }
 
-    // fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
-        
-    // }
-
     fn exiting(&mut self, _: &ActiveEventLoop) {
         // Destroy Vulkan resources safely
         unsafe { self.logical_device.as_ref().unwrap().destroy_device(None) };
-        unsafe {self.surface_loader.as_ref().unwrap().destroy_surface(self.surface, None)};
-        if let Some(instance) = &self.instance {
-            unsafe {instance.destroy_instance(None)};
-        }
+        unsafe { self.surface_loader.as_ref().unwrap().destroy_surface(self.surface, None) };
+        unsafe { self.instance.as_ref().unwrap().destroy_instance(None) };
         println!("Exiting window");
     }
 }

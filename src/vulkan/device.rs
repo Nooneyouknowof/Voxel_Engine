@@ -1,4 +1,4 @@
-use std::ffi::CStr;
+// use std::ffi::CStr;
 
 use ash::vk;
 use ash::Instance;
@@ -89,7 +89,7 @@ pub fn create_logical_device(instance: &ash::Instance, physical_device: vk::Phys
     ];
 
     // let available_extensions = unsafe {instance.enumerate_device_extension_properties(physical_device).expect("Failed to get device extensions")};
-    // println!("Available Extentions from Physical device: ");
+    // println!("Available Extentions from Physical device: "); // Debug
     // for ext in &available_extensions {
     //     let ext_name = unsafe { CStr::from_ptr(ext.extension_name.as_ptr()) };
     //     println!("- {}", ext_name.to_string_lossy());
