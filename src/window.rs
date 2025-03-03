@@ -8,6 +8,7 @@ use crate::vulkan::swapchain::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use std::ffi::CStr;
 use std::{ffi::CString, os::raw::c_char};
 
 #[derive(Default)]
@@ -17,7 +18,7 @@ pub struct AppEvents {
     surface: vk::SurfaceKHR,  // Store Vulkan surface
     surface_loader: Option<ash::khr::surface::Instance>,
     swapchain: vk::SwapchainKHR,
-    swapchain_loader: Option<ash::khr::swapchain::Instance>,
+    swapchain_loader: Option<ash::khr::swapchain::Device>,
     entry: Option<Entry>,  // Store Vulkan entry
     logical_device: Option<ash::Device>
 }
@@ -45,6 +46,11 @@ impl ApplicationHandler for AppEvents {
 
         // Get required extensions from winit
         let extension_names = required_extensions(window);
+        println!("Required Extensions for winit: ");
+        for ext in &extension_names {
+            let ext_name = unsafe { CStr::from_ptr(ext.clone()) };
+            println!("- {}", ext_name.to_string_lossy());
+        }
 
         let instance_info = vk::InstanceCreateInfo {
             s_type: vk::StructureType::INSTANCE_CREATE_INFO,
@@ -76,7 +82,7 @@ impl ApplicationHandler for AppEvents {
         self.surface = surface;
         self.surface_loader = Some(ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap()));
         
-        println!("Vulkan surface & loader successfully created!");
+        println!("Vulkan surface & surface loader successfully created!");
         
         let instance = self.instance.as_ref().unwrap();
         let physical_device = pick_physical_device(&instance);
@@ -88,7 +94,7 @@ impl ApplicationHandler for AppEvents {
         
         println!("Logical Device properties: {:?}, {:?}", logical_device.1, logical_device.2);
         
-        let swapchain = create_swap_chain(
+        let swapchain_stuff = create_swap_chain(
             instance, 
             self.logical_device.as_ref().unwrap().clone(), 
             physical_device, 
@@ -98,7 +104,8 @@ impl ApplicationHandler for AppEvents {
             window
         );
 
-        
+        self.swapchain = swapchain_stuff.swapchain;
+        self.swapchain_loader = Some(swapchain_stuff.swapchain_loader);
         
         println!("created Swapchain");
     }
@@ -137,8 +144,5 @@ fn required_extensions(window: &Window) -> Vec<*const c_char> {
     // Get required extensions from winit
     let surface_extensions = ash_window::enumerate_required_extensions(window.display_handle().unwrap().into()).unwrap();
     extensions.extend(surface_extensions.iter().copied());
-    // Always include VK_KHR_SURFACE
-    // extensions.push(ash::khr::surface::NAME.as_ptr());
-    // extensions.push(ash::khr::swapchain::NAME.as_ptr());
     extensions
 }

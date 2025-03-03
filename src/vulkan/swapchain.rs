@@ -13,8 +13,8 @@ pub struct SwapChainSupportDetails {
 
 #[allow(unused)]
 pub struct SwapChainStuff {
-    swapchain_loader: ash::khr::swapchain::Device,
-    swapchain: vk::SwapchainKHR,
+    pub swapchain_loader: ash::khr::swapchain::Device,
+    pub swapchain: vk::SwapchainKHR,
     swapchain_images: Vec<vk::Image>,
     swapchain_format: vk::Format,
     swapchain_extent: vk::Extent2D,
@@ -59,6 +59,7 @@ fn choose_swapchain_present_mode(available_present_modes: &Vec<vk::PresentModeKH
 }
 
 fn choose_swapchain_extent(capabilities: &vk::SurfaceCapabilitiesKHR, window: &Window) -> vk::Extent2D {
+    // println!("Capabilities: {:?}", capabilities);
     if capabilities.current_extent.width != u32::max_value() {
         capabilities.current_extent
     } else {
@@ -87,7 +88,6 @@ pub fn create_swap_chain(
     queue_family: (u32, u32),
     window: &Window
 ) -> SwapChainStuff {
-    // Placeholder for swap chain creation logic
     let swapchain_support = query_swapchain_support(physical_device, surface, surface_loader.clone());
 
     let surface_format = choose_swapchain_format(&swapchain_support.formats);
@@ -137,7 +137,10 @@ pub fn create_swap_chain(
         _marker: PhantomData
     };
 
+    // println!("Swap Chain Create Info: {:?}", swapchain_create_info);
     let swapchain_loader = ash::khr::swapchain::Device::new(instance, &device);
+    // println!("Swapchain loader initialized: {:?}", swapchain_loader.fp_v1_0().create_swapchain_khr);
+
     let swapchain = unsafe {
         swapchain_loader
             .create_swapchain(&swapchain_create_info, None)
@@ -147,7 +150,7 @@ pub fn create_swap_chain(
     let swapchain_images = unsafe {
         swapchain_loader
             .get_swapchain_images(swapchain)
-            .expect("Failed to create Swapchain!")
+            .expect("Failed to create Swapchain Images!")
     };
 
     SwapChainStuff {
@@ -159,7 +162,7 @@ pub fn create_swap_chain(
     }
 }
 
-pub fn create_render_pass(instance: &Instance, device: vk::PhysicalDevice) -> vk::RenderPass {
-    // Placeholder for render pass creation logic
-    vk::RenderPass::null()
-}
+// pub fn create_render_pass(instance: &Instance, device: vk::PhysicalDevice) -> vk::RenderPass {
+//     // Placeholder for render pass creation logic
+//     vk::RenderPass::null()
+// }

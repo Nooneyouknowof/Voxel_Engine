@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use ash::vk;
 use ash::Instance;
 
@@ -82,6 +84,17 @@ pub fn create_logical_device(instance: &ash::Instance, physical_device: vk::Phys
     let mut unique_indices = vec![graphics_queue_index];
     if !use_single_queue {unique_indices.push(present_queue_index)};
 
+    let required_device_extensions = vec![ // specific extensions I'll need to run this program 
+        ash::khr::swapchain::NAME.as_ptr()
+    ];
+
+    // let available_extensions = unsafe {instance.enumerate_device_extension_properties(physical_device).expect("Failed to get device extensions")};
+    // println!("Available Extentions from Physical device: ");
+    // for ext in &available_extensions {
+    //     let ext_name = unsafe { CStr::from_ptr(ext.extension_name.as_ptr()) };
+    //     println!("- {}", ext_name.to_string_lossy());
+    // }
+
     let queue_priorities = vec![1.0_f32];
     let queue_create_infos: Vec<_> = unique_indices.iter().map(|&queue_index| {
         vk::DeviceQueueCreateInfo {
@@ -100,7 +113,8 @@ pub fn create_logical_device(instance: &ash::Instance, physical_device: vk::Phys
         s_type: vk::StructureType::DEVICE_CREATE_INFO,
         queue_create_info_count: queue_create_infos.len() as u32,
         p_queue_create_infos: queue_create_infos.as_ptr(),
-        enabled_extension_count: 0,
+        enabled_extension_count: required_device_extensions.len() as u32,
+        pp_enabled_extension_names: required_device_extensions.as_ptr(),
         p_enabled_features: &physical_device_features,
         ..Default::default()
     };
