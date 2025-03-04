@@ -5,6 +5,7 @@ use winit::{event_loop::ActiveEventLoop, window::{Window, WindowId}};
 
 use crate::vulkan::device::*;
 use crate::vulkan::swapchain::*;
+use crate::vulkan::other::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -14,13 +15,14 @@ use std::{ffi::CString, os::raw::c_char};
 #[derive(Default)]
 pub struct AppEvents {
     window: Option<Window>,
-    instance: Option<Instance>,  // Store Vulkan instance
-    surface: vk::SurfaceKHR,  // Store Vulkan surface
+    entry: Option<Entry>,
+    instance: Option<Instance>,
+    surface: vk::SurfaceKHR,
     surface_loader: Option<ash::khr::surface::Instance>,
     swapchain: vk::SwapchainKHR,
     swapchain_loader: Option<ash::khr::swapchain::Device>,
-    entry: Option<Entry>,  // Store Vulkan entry
-    logical_device: Option<ash::Device>
+    logical_device: Option<ash::Device>,
+    swapchain_imageviews: Vec<vk::ImageView>
 }
 
 impl ApplicationHandler for AppEvents {
@@ -106,8 +108,18 @@ impl ApplicationHandler for AppEvents {
 
         self.swapchain = swapchain_stuff.swapchain;
         self.swapchain_loader = Some(swapchain_stuff.swapchain_loader);
-        
         println!("Created Swapchain");
+
+        let swapchain_imageviews = create_image_views(
+            self.logical_device.as_ref().unwrap(), 
+            swapchain_stuff.swapchain_format, 
+            &swapchain_stuff.swapchain_images
+        );
+        self.swapchain_imageviews = swapchain_imageviews;
+
+        let _graphics_pipeline = create_graphics_pipeline(self.logical_device.as_ref().unwrap());
+
+
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
