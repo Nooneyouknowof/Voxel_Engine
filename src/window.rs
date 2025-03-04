@@ -22,7 +22,10 @@ pub struct AppEvents {
     swapchain: vk::SwapchainKHR,
     swapchain_loader: Option<ash::khr::swapchain::Device>,
     logical_device: Option<ash::Device>,
-    swapchain_imageviews: Vec<vk::ImageView>
+    swapchain_imageviews: Vec<vk::ImageView>,
+    render_pass: vk::RenderPass,
+    pipeline_layout: vk::PipelineLayout,
+    graphics_pipeline: vk::Pipeline,
 }
 
 impl ApplicationHandler for AppEvents {
@@ -117,7 +120,19 @@ impl ApplicationHandler for AppEvents {
         );
         self.swapchain_imageviews = swapchain_imageviews;
 
-        let _graphics_pipeline = create_graphics_pipeline(self.logical_device.as_ref().unwrap());
+        let render_pass = create_render_pass(
+            self.logical_device.as_ref().unwrap(), 
+            swapchain_stuff.swapchain_format
+        );
+        self.render_pass = render_pass;
+        let (graphics_pipeline, pipeline_layout) = create_graphics_pipeline(
+            self.logical_device.as_ref().unwrap(),
+            self.render_pass,
+            swapchain_stuff.swapchain_extent
+        );
+        self.graphics_pipeline = graphics_pipeline;
+        self.pipeline_layout = pipeline_layout;
+
 
 
     }
