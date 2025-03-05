@@ -161,8 +161,3 @@ pub fn create_swap_chain(
         swapchain_images
     }
 }
-
-// pub fn create_render_pass(instance: &Instance, device: vk::PhysicalDevice) -> vk::RenderPass {
-//     // Placeholder for render pass creation logic
-//     vk::RenderPass::null()
-// }

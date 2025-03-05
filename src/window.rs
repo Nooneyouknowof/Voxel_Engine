@@ -134,7 +134,25 @@ impl ApplicationHandler for AppEvents {
         self.pipeline_layout = pipeline_layout;
 
 
+        println!("Graphics Pipeline: {:?}", graphics_pipeline);
+        println!("Pipeline Layout: {:?}", pipeline_layout);
 
+        let swapchain_framebuffers = create_framebuffers(
+            self.logical_device.as_ref().unwrap(),
+            render_pass,
+            &self.swapchain_imageviews,
+            &swapchain_stuff.swapchain_extent,
+        );
+
+        let command_pool = create_command_pool(&self.logical_device.as_ref().unwrap(), queue_family.1);
+        let command_buffers = create_command_buffers(
+            &self.logical_device.as_ref().unwrap(),
+            command_pool,
+            graphics_pipeline,
+            &swapchain_framebuffers,
+            render_pass,
+            swapchain_stuff.swapchain_extent,
+        );
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
