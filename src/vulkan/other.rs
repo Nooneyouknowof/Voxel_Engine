@@ -40,6 +40,7 @@ pub fn create_image_views(device: &ash::Device, surface_format: vk::Format, imag
 }
 
 pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPass, swapchain_extent: vk::Extent2D) -> (vk::Pipeline, vk::PipelineLayout) {
+    println!(" --- create_graphics_pipeline function debug info --- ");
     let vert_shader_code = read_shader_code(Path::new("shaders/glsl.vert.spv"));
     let frag_shader_code = read_shader_code(Path::new("shaders/glsl.frag.spv"));
 
@@ -47,6 +48,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
     let frag_shader_module = create_shader_module(device, frag_shader_code);
 
     let main_function_name = CString::new("main").unwrap();
+    println!("main function name: {:?}", main_function_name);
 
     let shader_stages = [
         vk::PipelineShaderStageCreateInfo {
@@ -66,6 +68,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
             ..Default::default()
         }
     ];
+    println!("Shader Stages: {:?}", shader_stages);
 
     let vertex_input_state_create_info = vk::PipelineVertexInputStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -85,6 +88,8 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         topology: vk::PrimitiveTopology::TRIANGLE_LIST,
         _marker: std::marker::PhantomData,
     };
+    println!("Vertex input state create info: {:?}", vertex_input_state_create_info);
+    println!("Vertx input assembly state info: {:?}", vertex_input_assembly_state_info);
 
     let viewports = [vk::Viewport {
         x: 0.0,
@@ -94,11 +99,13 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         min_depth: 0.0,
         max_depth: 1.0,
     }];
+    println!("Viewports: {:?}", viewports);
 
     let scissors = [vk::Rect2D {
         offset: vk::Offset2D { x: 0, y: 0 },
         extent: swapchain_extent,
     }];
+    println!("Scissors: {:?}", scissors);
 
     let viewport_state_create_info = vk::PipelineViewportStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -109,6 +116,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         p_viewports: viewports.as_ptr(),
         ..Default::default()
     };
+    println!("Viewport state create info: {:?}", viewport_state_create_info);
 
     let rasterization_statue_create_info = vk::PipelineRasterizationStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -125,6 +133,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         depth_bias_slope_factor: 0.0,
         ..Default::default()
     };
+    println!("Rasterization statue create info: {:?}", rasterization_statue_create_info);
 
     let multisample_state_create_info = vk::PipelineMultisampleStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
@@ -136,6 +145,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         alpha_to_coverage_enable: vk::FALSE,
         ..Default::default()
     };
+    println!("Multisample state create info: {:?}", multisample_state_create_info);
 
     let stencil_state = vk::StencilOpState {
         fail_op: vk::StencilOp::KEEP,
@@ -146,6 +156,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         write_mask: 0,
         reference: 0,
     };
+    println!("Stencil state: {:?}", stencil_state);
 
     let depth_state_create_info = vk::PipelineDepthStencilStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -161,6 +172,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         min_depth_bounds: 0.0,
         ..Default::default()
     };
+    println!("Depth state create info: {:?}", depth_state_create_info);
 
     let color_blend_attachment_states = [vk::PipelineColorBlendAttachmentState {
         blend_enable: vk::FALSE,
@@ -172,6 +184,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         dst_alpha_blend_factor: vk::BlendFactor::ZERO,
         alpha_blend_op: vk::BlendOp::ADD,
     }];
+    println!("Color blend attachment states: {:?}", color_blend_attachment_states);
 
     let color_blend_state = vk::PipelineColorBlendStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
@@ -183,6 +196,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         blend_constants: [0.0, 0.0, 0.0, 0.0],
         ..Default::default()
     };
+    println!("Color blend attachment states: {:?}", color_blend_state);
 
     //                leaving the dynamic statue unconfigurated right now
     //                let dynamic_state = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
@@ -201,12 +215,14 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         push_constant_range_count: 0,
         ..Default::default()
     };
+    println!("Pipeline layout create info: {:?}", pipeline_layout_create_info);
 
     let pipeline_layout = unsafe {
         device
             .create_pipeline_layout(&pipeline_layout_create_info, None)
             .expect("Failed to create pipeline layout!")
     };
+    println!("Pipeline layout: {:?}", pipeline_layout);
 
     unsafe {
         device.destroy_shader_module(vert_shader_module, None);
@@ -235,6 +251,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         p_dynamic_state: ptr::null(),
         _marker: std::marker::PhantomData,
     }];
+    println!("Graphics pipeline create infos: {:?}", graphic_pipeline_create_infos);
 
     let graphics_pipelines = unsafe {
         device
@@ -245,6 +262,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
             )
             .expect("Failed to create Graphics Pipeline!.")
     };
+    println!("Graphics pipelines: {:?}", graphics_pipelines);
 
     unsafe {
         device.destroy_shader_module(vert_shader_module, None);
@@ -300,10 +318,14 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
         flags: vk::SubpassDescriptionFlags::empty(),
         pipeline_bind_point: vk::PipelineBindPoint::GRAPHICS,
         input_attachment_count: 0,
+        p_input_attachments: ptr::null(),
         color_attachment_count: 1,
         p_color_attachments: &color_attachment_ref,
+        p_resolve_attachments: ptr::null(),
+        p_depth_stencil_attachment: ptr::null(),
         preserve_attachment_count: 0,
-        ..Default::default()
+        p_preserve_attachments: ptr::null(),
+        _marker: std::marker::PhantomData
     };
 
     let render_pass_attachments = [color_attachment];
@@ -311,12 +333,15 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
     let renderpass_create_info = vk::RenderPassCreateInfo {
         s_type: vk::StructureType::RENDER_PASS_CREATE_INFO,
         flags: vk::RenderPassCreateFlags::empty(),
+        p_next: ptr::null(),
         attachment_count: render_pass_attachments.len() as u32,
         p_attachments: render_pass_attachments.as_ptr(),
         subpass_count: 1,
         p_subpasses: &subpass,
         dependency_count: 0,
-        ..Default::default()
+        p_dependencies: ptr::null(),
+        _marker: std::marker::PhantomData
+        // ..Default::default()
     };
 
     unsafe {
