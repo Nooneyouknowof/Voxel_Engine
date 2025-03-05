@@ -9,7 +9,7 @@ use crate::vulkan::other::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-// use std::ffi::CStr;
+use std::ffi::CStr;
 use std::{ffi::CString, os::raw::c_char};
 
 #[derive(Default)]
@@ -56,12 +56,14 @@ impl ApplicationHandler for AppEvents {
         //     let ext_name = unsafe { CStr::from_ptr(ext.clone()) };
         //     println!("- {}", ext_name.to_string_lossy());
         // }
-
+        let validation_layers = vec!["VK_LAYER_KHRONOS_validation"];
         let instance_info = vk::InstanceCreateInfo {
             s_type: vk::StructureType::INSTANCE_CREATE_INFO,
             p_application_info: &app_info,
             enabled_extension_count: extension_names.len() as u32,
             pp_enabled_extension_names: extension_names.as_ptr(),
+            enabled_layer_count: validation_layers.len() as u32,
+            pp_enabled_layer_names: validation_layers.as_ptr() as *const *const i8,
             ..Default::default()
         };
 
@@ -189,4 +191,23 @@ fn required_extensions(window: &Window) -> Vec<*const c_char> {
     let surface_extensions = ash_window::enumerate_required_extensions(window.display_handle().unwrap().into()).unwrap();
     extensions.extend(surface_extensions.iter().copied());
     extensions
+}
+
+fn check_validation_layer_support(entry: &ash::Entry) -> bool {
+    let available_layers = unsafe {
+        entry.enumerate_instance_layer_properties().unwrap()
+    };
+    
+    for layer in &["VK_LAYER_KHRONOS_validation"] {
+        let found = available_layers.iter().any(|l| {
+            unsafe { CStr::from_ptr(l.layer_name.as_ptr()) }
+                .to_str()
+                .unwrap() == *layer
+        });
+
+        if !found {
+            return false;
+        }
+    }
+    true
 }
