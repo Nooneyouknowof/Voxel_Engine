@@ -57,6 +57,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
             module: vert_shader_module,
             p_name: main_function_name.as_ptr(),
             stage: vk::ShaderStageFlags::VERTEX,
+            p_specialization_info: ptr::null(),
             ..Default::default()
         },
         vk::PipelineShaderStageCreateInfo {
@@ -65,6 +66,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
             module: frag_shader_module,
             p_name: main_function_name.as_ptr(),
             stage: vk::ShaderStageFlags::FRAGMENT,
+            p_specialization_info: ptr::null(),
             ..Default::default()
         }
     ];
@@ -78,7 +80,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         p_vertex_attribute_descriptions: ptr::null(),
         vertex_binding_description_count: 0,
         p_vertex_binding_descriptions: ptr::null(),
-        _marker: std::marker::PhantomData,
+        ..Default::default()
     };
     let vertex_input_assembly_state_info = vk::PipelineInputAssemblyStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -86,10 +88,10 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         p_next: ptr::null(),
         primitive_restart_enable: vk::FALSE,
         topology: vk::PrimitiveTopology::TRIANGLE_LIST,
-        _marker: std::marker::PhantomData,
+        ..Default::default()
     };
     println!("Vertex input state create info: {:?}", vertex_input_state_create_info);
-    println!("Vertx input assembly state info: {:?}", vertex_input_assembly_state_info);
+    println!("Vertex input assembly state info: {:?}", vertex_input_assembly_state_info);
 
     let viewports = [vk::Viewport {
         x: 0.0,
@@ -118,7 +120,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
     };
     println!("Viewport state create info: {:?}", viewport_state_create_info);
 
-    let rasterization_statue_create_info = vk::PipelineRasterizationStateCreateInfo {
+    let rasterization_state_create_info = vk::PipelineRasterizationStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         flags: vk::PipelineRasterizationStateCreateFlags::empty(),
         depth_clamp_enable: vk::FALSE,
@@ -133,7 +135,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         depth_bias_slope_factor: 0.0,
         ..Default::default()
     };
-    println!("Rasterization statue create info: {:?}", rasterization_statue_create_info);
+    println!("Rasterization state create info: {:?}", rasterization_state_create_info);
 
     let multisample_state_create_info = vk::PipelineMultisampleStateCreateInfo {
         s_type: vk::StructureType::PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
@@ -176,7 +178,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
 
     let color_blend_attachment_states = [vk::PipelineColorBlendAttachmentState {
         blend_enable: vk::FALSE,
-        color_write_mask: vk::ColorComponentFlags::default(),
+        color_write_mask: vk::ColorComponentFlags::empty(),
         src_color_blend_factor: vk::BlendFactor::ONE,
         dst_color_blend_factor: vk::BlendFactor::ZERO,
         color_blend_op: vk::BlendOp::ADD,
@@ -196,23 +198,15 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         blend_constants: [0.0, 0.0, 0.0, 0.0],
         ..Default::default()
     };
-    println!("Color blend attachment states: {:?}", color_blend_state);
-
-    //                leaving the dynamic statue unconfigurated right now
-    //                let dynamic_state = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-    //                let dynamic_state_info = vk::PipelineDynamicStateCreateInfo {
-    //                    s_type: vk::StructureType::PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-    //                    p_next: ptr::null(),
-    //                    flags: vk::PipelineDynamicStateCreateFlags::empty(),
-    //                    dynamic_state_count: dynamic_state.len() as u32,
-    //                    p_dynamic_states: dynamic_state.as_ptr(),
-    //                };
+    println!("Color blend state create info: {:?}", color_blend_state);
 
     let pipeline_layout_create_info = vk::PipelineLayoutCreateInfo {
         s_type: vk::StructureType::PIPELINE_LAYOUT_CREATE_INFO,
         flags: vk::PipelineLayoutCreateFlags::empty(),
         set_layout_count: 0,
+        p_set_layouts: ptr::null(),
         push_constant_range_count: 0,
+        p_push_constant_ranges: ptr::null(),
         ..Default::default()
     };
     println!("Pipeline layout create info: {:?}", pipeline_layout_create_info);
@@ -224,11 +218,6 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
     };
     println!("Pipeline layout: {:?}", pipeline_layout);
 
-    unsafe {
-        device.destroy_shader_module(vert_shader_module, None);
-        device.destroy_shader_module(frag_shader_module, None);
-    }
-
     let graphic_pipeline_create_infos = [vk::GraphicsPipelineCreateInfo {
         s_type: vk::StructureType::GRAPHICS_PIPELINE_CREATE_INFO,
         flags: vk::PipelineCreateFlags::empty(),
@@ -237,19 +226,17 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
         p_vertex_input_state: &vertex_input_state_create_info,
         p_input_assembly_state: &vertex_input_assembly_state_info,
         p_viewport_state: &viewport_state_create_info,
-        p_rasterization_state: &rasterization_statue_create_info,
+        p_rasterization_state: &rasterization_state_create_info,
         p_multisample_state: &multisample_state_create_info,
         p_depth_stencil_state: &depth_state_create_info,
         p_color_blend_state: &color_blend_state,
+        p_dynamic_state: ptr::null(),
         layout: pipeline_layout,
         render_pass,
         subpass: 0,
         base_pipeline_handle: vk::Pipeline::null(),
         base_pipeline_index: -1,
-        p_next: ptr::null(),
-        p_tessellation_state: ptr::null(),
-        p_dynamic_state: ptr::null(),
-        _marker: std::marker::PhantomData,
+        ..Default::default()
     }];
     println!("Graphics pipeline create infos: {:?}", graphic_pipeline_create_infos);
 
@@ -260,7 +247,7 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
                 &graphic_pipeline_create_infos,
                 None,
             )
-            .expect("Failed to create Graphics Pipeline!.")
+            .expect("Failed to create Graphics Pipeline!")
     };
     println!("Graphics pipelines: {:?}", graphics_pipelines);
 
