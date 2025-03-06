@@ -186,7 +186,10 @@ pub fn create_graphics_pipeline(device: &ash::Device, render_pass: vk::RenderPas
 
     let color_blend_attachment_states = [vk::PipelineColorBlendAttachmentState {
         blend_enable: vk::FALSE,
-        color_write_mask: vk::ColorComponentFlags::empty(),
+        color_write_mask: vk::ColorComponentFlags::R 
+            | vk::ColorComponentFlags::G 
+            | vk::ColorComponentFlags::B 
+            | vk::ColorComponentFlags::A,  // Enable all color components
         src_color_blend_factor: vk::BlendFactor::ONE,
         dst_color_blend_factor: vk::BlendFactor::ZERO,
         color_blend_op: vk::BlendOp::ADD,
@@ -526,13 +529,14 @@ pub fn create_command_buffers(
                 vk::PipelineBindPoint::GRAPHICS,
                 graphics_pipeline,
             );
-            device.cmd_draw(command_buffer, 3, 1, 0, 0);
 
+            // device.cmd_draw(command_buffer, 3, 1, 0, 0);
+            
             device.cmd_end_render_pass(command_buffer);
-
+            
             device
-                .end_command_buffer(command_buffer)
-                .expect("Failed to record Command Buffer at Ending!");
+            .end_command_buffer(command_buffer)
+            .expect("Failed to record Command Buffer at Ending!");
         }
     }
 

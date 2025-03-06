@@ -171,10 +171,10 @@ impl ApplicationHandler for AppEvents {
         println!("Command Buffers: {:?}", command_buffers);
         self.command_buffers = command_buffers;
 
-        let sync_ojbects = create_sync_objects(&self.logical_device.as_ref().unwrap());
-        self.in_flight_fences = sync_ojbects.in_flight_fences;
-        self.image_available_semaphores = sync_ojbects.image_available_semaphores;
-        self.render_finished_semaphores = sync_ojbects.render_finished_semaphores;
+        let sync_objects = create_sync_objects(&self.logical_device.as_ref().unwrap());
+        self.image_available_semaphores = sync_objects.image_available_semaphores;
+        self.render_finished_semaphores = sync_objects.render_finished_semaphores;
+        self.in_flight_fences = sync_objects.in_flight_fences;
         self.current_frame = 0;
     }
 
@@ -191,73 +191,82 @@ impl ApplicationHandler for AppEvents {
             }
 
             WindowEvent::RedrawRequested => {
-                println!("\nRedraw requested");
                 let wait_fences = [self.in_flight_fences[self.current_frame]];
 
-                let (image_index, _is_sub_optimal) = unsafe {
+                unsafe {
+                    // Wait for the previous frame to finish
                     self.logical_device.as_ref().unwrap()
                         .wait_for_fences(&wait_fences, true, std::u64::MAX)
                         .expect("Failed to wait for Fence!");
-        
-                    self.swapchain_loader.as_ref().unwrap()
+
+                    // Reset the fence for this frame
+                    self.logical_device.as_ref().unwrap()
+                        .reset_fences(&wait_fences)
+                        .expect("Failed to reset Fence!");
+
+                    // Acquire the next image
+                    let (image_index, _is_sub_optimal) = match self.swapchain_loader.as_ref().unwrap()
                         .acquire_next_image(
                             self.swapchain,
                             std::u64::MAX,
                             self.image_available_semaphores[self.current_frame],
                             vk::Fence::null(),
-                        )
-                        .expect("Failed to acquire next image.")
-                };
-        
-                let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
-                let wait_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
-                let signal_semaphores = [self.render_finished_semaphores[self.current_frame]];
-        
-                let submit_infos = [vk::SubmitInfo {
-                    s_type: vk::StructureType::SUBMIT_INFO,
-                    wait_semaphore_count: wait_semaphores.len() as u32,
-                    p_wait_semaphores: wait_semaphores.as_ptr(),
-                    p_wait_dst_stage_mask: wait_stages.as_ptr(),
-                    command_buffer_count: 1,
-                    p_command_buffers: &self.command_buffers[image_index as usize],
-                    signal_semaphore_count: signal_semaphores.len() as u32,
-                    p_signal_semaphores: signal_semaphores.as_ptr(),
-                    ..Default::default()
-                }];
-        
-                unsafe {
+                        ) {
+                            Ok((index, sub_optimal)) => (index, sub_optimal),
+                            Err(e) => {
+                                println!("Failed to acquire next image: {:?}", e);
+                                return;
+                            }
+                        };
+
+                    // Submit the command buffer
+                    let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
+                    let wait_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+                    let command_buffers = [self.command_buffers[image_index as usize]];
+                    let signal_semaphores = [self.render_finished_semaphores[self.current_frame]];
+
+                    let submit_info = vk::SubmitInfo {
+                        s_type: vk::StructureType::SUBMIT_INFO,
+                        wait_semaphore_count: 1,
+                        p_wait_semaphores: wait_semaphores.as_ptr(),
+                        p_wait_dst_stage_mask: wait_stages.as_ptr(),
+                        command_buffer_count: 1,
+                        p_command_buffers: command_buffers.as_ptr(),
+                        signal_semaphore_count: 1,
+                        p_signal_semaphores: signal_semaphores.as_ptr(),
+                        ..Default::default()
+                    };
+
                     self.logical_device.as_ref().unwrap()
-                        .reset_fences(&wait_fences)
-                        .expect("Failed to reset Fence!");
-        
-                        self.logical_device.as_ref().unwrap()
                         .queue_submit(
                             self.queue,
-                            &submit_infos,
+                            &[submit_info],
                             self.in_flight_fences[self.current_frame],
                         )
-                        .expect("Failed to execute queue submit.");
+                        .expect("Failed to submit draw command buffer");
+
+                    // Present the image
+                    let swapchains = [self.swapchain];
+                    let image_indices = [image_index];
+                    let present_info = vk::PresentInfoKHR {
+                        s_type: vk::StructureType::PRESENT_INFO_KHR,
+                        wait_semaphore_count: 1,
+                        p_wait_semaphores: signal_semaphores.as_ptr(),
+                        swapchain_count: 1,
+                        p_swapchains: swapchains.as_ptr(),
+                        p_image_indices: image_indices.as_ptr(),
+                        p_results: std::ptr::null_mut(),
+                        ..Default::default()
+                    };
+
+                    match self.swapchain_loader.as_ref().unwrap()
+                        .queue_present(self.queue, &present_info) {
+                        Ok(_) => {},
+                        Err(e) => println!("Failed to present queue: {:?}", e),
+                    }
+
+                    self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
                 }
-        
-                let swapchains = [self.swapchain];
-        
-                let present_info = vk::PresentInfoKHR {
-                    s_type: vk::StructureType::PRESENT_INFO_KHR,
-                    wait_semaphore_count: 1,
-                    p_wait_semaphores: signal_semaphores.as_ptr(),
-                    swapchain_count: 1,
-                    p_swapchains: swapchains.as_ptr(),
-                    p_image_indices: &image_index,
-                    ..Default::default()
-                };
-        
-                // unsafe {
-                //     self.swapchain_loader
-                //         .queue_present(self.queue, &present_info)
-                //         .expect("Failed to execute queue present.");
-                // }
-        
-                self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
             }
             _ => ()
         }
