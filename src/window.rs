@@ -146,8 +146,10 @@ impl ApplicationHandler for AppEvents {
             &self.swapchain_imageviews,
             &swapchain_stuff.swapchain_extent,
         );
+        println!("Swapchain Framebuffers: {:?}", swapchain_framebuffers);
 
         let command_pool = create_command_pool(&self.logical_device.as_ref().unwrap(), queue_family.1);
+        println!("Command Pool: {:?}", command_pool);
         let command_buffers = create_command_buffers(
             &self.logical_device.as_ref().unwrap(),
             command_pool,
@@ -156,6 +158,7 @@ impl ApplicationHandler for AppEvents {
             render_pass,
             swapchain_stuff.swapchain_extent,
         );
+        println!("Command Buffers: {:?}", command_buffers);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {

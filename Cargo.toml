@@ -10,4 +10,3 @@ vk-sync = "0.1.6"
 winit = "0.30.9"
 raw-window-handle = "0.6.0"  # Needed for winit + Vulkan integration
 ash-window = "0.13.0"
-shaderc = "0.8.3"
