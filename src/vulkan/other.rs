@@ -2,6 +2,14 @@ use std::{ffi::CString, fs::File, io::Read, path::Path, ptr};
 
 use ash::vk;
 
+pub const MAX_FRAMES_IN_FLIGHT: usize = 2;
+
+pub struct SyncObjects {
+    pub image_available_semaphores: Vec<vk::Semaphore>,
+    pub render_finished_semaphores: Vec<vk::Semaphore>,
+    pub in_flight_fences: Vec<vk::Fence>,
+}
+
 pub fn create_image_views(device: &ash::Device, surface_format: vk::Format, images: &Vec<vk::Image>) -> Vec<vk::ImageView> {
     let mut swapchain_imageviews = vec![];
 
@@ -317,6 +325,16 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
 
     let render_pass_attachments = [color_attachment];
 
+    let subpass_dependencies = [vk::SubpassDependency {
+        src_subpass: vk::SUBPASS_EXTERNAL,
+        dst_subpass: 0,
+        src_stage_mask: vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+        dst_stage_mask: vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+        src_access_mask: vk::AccessFlags::empty(),
+        dst_access_mask: vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
+        dependency_flags: vk::DependencyFlags::empty(),
+    }];
+
     let renderpass_create_info = vk::RenderPassCreateInfo {
         s_type: vk::StructureType::RENDER_PASS_CREATE_INFO,
         flags: vk::RenderPassCreateFlags::empty(),
@@ -325,8 +343,8 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
         p_attachments: render_pass_attachments.as_ptr(),
         subpass_count: 1,
         p_subpasses: &subpass,
-        dependency_count: 0,
-        p_dependencies: ptr::null(),
+        dependency_count: subpass_dependencies.len() as u32,
+        p_dependencies: subpass_dependencies.as_ptr(),
         _marker: std::marker::PhantomData
         // ..Default::default()
     };
@@ -336,6 +354,52 @@ pub fn create_render_pass(device: &ash::Device, surface_format: vk::Format) -> v
             .create_render_pass(&renderpass_create_info, None)
             .expect("Failed to create render pass!")
     }
+}
+
+pub fn create_sync_objects(device: &ash::Device) -> SyncObjects {
+    let mut sync_objects = SyncObjects {
+        image_available_semaphores: vec![],
+        render_finished_semaphores: vec![],
+        in_flight_fences: vec![],
+    };
+
+    let semaphore_create_info = vk::SemaphoreCreateInfo {
+        s_type: vk::StructureType::SEMAPHORE_CREATE_INFO,
+        p_next: ptr::null(),
+        flags: vk::SemaphoreCreateFlags::empty(),
+        ..Default::default()
+    };
+
+    let fence_create_info = vk::FenceCreateInfo {
+        s_type: vk::StructureType::FENCE_CREATE_INFO,
+        p_next: ptr::null(),
+        flags: vk::FenceCreateFlags::SIGNALED,
+        ..Default::default()
+    };
+
+    for _ in 0..MAX_FRAMES_IN_FLIGHT {
+        unsafe {
+            let image_available_semaphore = device
+                .create_semaphore(&semaphore_create_info, None)
+                .expect("Failed to create Semaphore Object!");
+            let render_finished_semaphore = device
+                .create_semaphore(&semaphore_create_info, None)
+                .expect("Failed to create Semaphore Object!");
+            let inflight_fence = device
+                .create_fence(&fence_create_info, None)
+                .expect("Failed to create Fence Object!");
+
+            sync_objects
+                .image_available_semaphores
+                .push(image_available_semaphore);
+            sync_objects
+                .render_finished_semaphores
+                .push(render_finished_semaphore);
+            sync_objects.in_flight_fences.push(inflight_fence);
+        }
+    }
+
+    sync_objects
 }
 
 pub fn create_framebuffers(

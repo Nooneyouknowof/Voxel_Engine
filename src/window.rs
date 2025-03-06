@@ -25,6 +25,13 @@ pub struct AppEvents {
     render_pass: vk::RenderPass,
     pipeline_layout: vk::PipelineLayout,
     graphics_pipeline: vk::Pipeline,
+    command_buffers: Vec<vk::CommandBuffer>,
+    queue: vk::Queue,
+
+    image_available_semaphores: Vec<vk::Semaphore>,
+    render_finished_semaphores: Vec<vk::Semaphore>,
+    in_flight_fences: Vec<vk::Fence>,
+    current_frame: usize,
 }
 
 impl ApplicationHandler for AppEvents {
@@ -99,6 +106,7 @@ impl ApplicationHandler for AppEvents {
             self.surface, self.surface_loader.as_ref().unwrap().clone());
         let logical_device = create_logical_device(instance, physical_device, queue_family);
         self.logical_device = Some(logical_device.0);
+        self.queue = logical_device.1;
 
         println!("Logical Device properties: {:?}, {:?}", logical_device.1, logical_device.2);
 
@@ -127,6 +135,7 @@ impl ApplicationHandler for AppEvents {
             self.logical_device.as_ref().unwrap(),
             swapchain_stuff.swapchain_format
         );
+        println!("Render Pass: {:?}", render_pass);
         self.render_pass = render_pass;
         let (graphics_pipeline, pipeline_layout) = create_graphics_pipeline(
             self.logical_device.as_ref().unwrap(),
@@ -148,6 +157,7 @@ impl ApplicationHandler for AppEvents {
         );
         println!("Swapchain Framebuffers: {:?}", swapchain_framebuffers);
 
+        println!("Queue Family: {:?}", queue_family);
         let command_pool = create_command_pool(&self.logical_device.as_ref().unwrap(), queue_family.1);
         println!("Command Pool: {:?}", command_pool);
         let command_buffers = create_command_buffers(
@@ -159,6 +169,13 @@ impl ApplicationHandler for AppEvents {
             swapchain_stuff.swapchain_extent,
         );
         println!("Command Buffers: {:?}", command_buffers);
+        self.command_buffers = command_buffers;
+
+        let sync_ojbects = create_sync_objects(&self.logical_device.as_ref().unwrap());
+        self.in_flight_fences = sync_ojbects.in_flight_fences;
+        self.image_available_semaphores = sync_ojbects.image_available_semaphores;
+        self.render_finished_semaphores = sync_ojbects.render_finished_semaphores;
+        self.current_frame = 0;
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
@@ -174,7 +191,73 @@ impl ApplicationHandler for AppEvents {
             }
 
             WindowEvent::RedrawRequested => {
-                // TODO: Draw frame using Vulkan
+                println!("\nRedraw requested");
+                let wait_fences = [self.in_flight_fences[self.current_frame]];
+
+                let (image_index, _is_sub_optimal) = unsafe {
+                    self.logical_device.as_ref().unwrap()
+                        .wait_for_fences(&wait_fences, true, std::u64::MAX)
+                        .expect("Failed to wait for Fence!");
+        
+                    self.swapchain_loader.as_ref().unwrap()
+                        .acquire_next_image(
+                            self.swapchain,
+                            std::u64::MAX,
+                            self.image_available_semaphores[self.current_frame],
+                            vk::Fence::null(),
+                        )
+                        .expect("Failed to acquire next image.")
+                };
+        
+                let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
+                let wait_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+                let signal_semaphores = [self.render_finished_semaphores[self.current_frame]];
+        
+                let submit_infos = [vk::SubmitInfo {
+                    s_type: vk::StructureType::SUBMIT_INFO,
+                    wait_semaphore_count: wait_semaphores.len() as u32,
+                    p_wait_semaphores: wait_semaphores.as_ptr(),
+                    p_wait_dst_stage_mask: wait_stages.as_ptr(),
+                    command_buffer_count: 1,
+                    p_command_buffers: &self.command_buffers[image_index as usize],
+                    signal_semaphore_count: signal_semaphores.len() as u32,
+                    p_signal_semaphores: signal_semaphores.as_ptr(),
+                    ..Default::default()
+                }];
+        
+                unsafe {
+                    self.logical_device.as_ref().unwrap()
+                        .reset_fences(&wait_fences)
+                        .expect("Failed to reset Fence!");
+        
+                        self.logical_device.as_ref().unwrap()
+                        .queue_submit(
+                            self.queue,
+                            &submit_infos,
+                            self.in_flight_fences[self.current_frame],
+                        )
+                        .expect("Failed to execute queue submit.");
+                }
+        
+                let swapchains = [self.swapchain];
+        
+                let present_info = vk::PresentInfoKHR {
+                    s_type: vk::StructureType::PRESENT_INFO_KHR,
+                    wait_semaphore_count: 1,
+                    p_wait_semaphores: signal_semaphores.as_ptr(),
+                    swapchain_count: 1,
+                    p_swapchains: swapchains.as_ptr(),
+                    p_image_indices: &image_index,
+                    ..Default::default()
+                };
+        
+                // unsafe {
+                //     self.swapchain_loader
+                //         .queue_present(self.queue, &present_info)
+                //         .expect("Failed to execute queue present.");
+                // }
+        
+                self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
             }
             _ => ()
         }
