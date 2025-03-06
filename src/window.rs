@@ -114,7 +114,7 @@ impl ApplicationHandler for AppEvents {
 
         self.swapchain = swapchain_stuff.swapchain;
         self.swapchain_loader = Some(swapchain_stuff.swapchain_loader);
-        println!("Created Swapchain");
+        println!("Swapchain: {:?}", swapchain_stuff.swapchain);
 
         let swapchain_imageviews = create_image_views(
             self.logical_device.as_ref().unwrap(),
