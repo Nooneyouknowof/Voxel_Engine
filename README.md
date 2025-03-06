@@ -77,7 +77,3 @@ An infinite voxel-based roguelike where the world dynamically reacts to the play
 - Fine-tune **Sound Design & Atmosphere**
 - Implement **Creative Mode Mechanics**
 - Add **Post-Endgame Choices (Rule the world, reset, create, etc.)**
-
-# **Current Focus**
-🚀 **Next Step:** Implement **Physical Device Selection in Vulkan** to ensure proper GPU utilization for rendering.
-
