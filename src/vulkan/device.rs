@@ -84,7 +84,7 @@ pub fn create_logical_device(instance: &ash::Instance, physical_device: vk::Phys
     let mut unique_indices = vec![graphics_queue_index];
     if !use_single_queue {unique_indices.push(present_queue_index)};
 
-    let required_device_extensions = vec![ // specific extensions I'll need to run this program 
+    let required_device_extensions = vec![ // specific extensions I'll need to run this program
         ash::khr::swapchain::NAME.as_ptr()
     ];
 
@@ -131,6 +131,8 @@ pub fn create_logical_device(instance: &ash::Instance, physical_device: vk::Phys
     } else {
         Some(unsafe { logical_device.get_device_queue(present_queue_index, 0) })
     };
+    println!("Graphics queue: {:?}", graphics_queue);
+    println!("Present queue: {:?}", present_queue);
 
     (logical_device, graphics_queue, present_queue)
 }

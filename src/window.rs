@@ -9,7 +9,6 @@ use crate::vulkan::other::*;
 use ash::{vk, Entry, Instance};
 use ash_window;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use std::ffi::CStr;
 use std::{ffi::CString, os::raw::c_char};
 
 #[derive(Default)]
@@ -36,6 +35,7 @@ impl ApplicationHandler for AppEvents {
         let window = self.window.as_ref().unwrap();
 
         let entry = unsafe { Entry::load().expect("Failed to load Vulkan") };
+        // println!("Supports Validation Layers {:?}", check_validation_layer_support(&entry));
         // Application info
         let app_name = CString::new(attributes.title.to_string()).unwrap();
         let engine_name = CString::new("Custom Engine").unwrap();
@@ -56,14 +56,15 @@ impl ApplicationHandler for AppEvents {
         //     let ext_name = unsafe { CStr::from_ptr(ext.clone()) };
         //     println!("- {}", ext_name.to_string_lossy());
         // }
-        let validation_layers = vec!["VK_LAYER_KHRONOS_validation"];
+
+        // let validation_layers = vec!["VK_LAYER_KHRONOS_validation"];
         let instance_info = vk::InstanceCreateInfo {
             s_type: vk::StructureType::INSTANCE_CREATE_INFO,
             p_application_info: &app_info,
             enabled_extension_count: extension_names.len() as u32,
             pp_enabled_extension_names: extension_names.as_ptr(),
-            enabled_layer_count: validation_layers.len() as u32,
-            pp_enabled_layer_names: validation_layers.as_ptr() as *const *const i8,
+            // enabled_layer_count: validation_layers.len() as u32,
+            // pp_enabled_layer_names: validation_layers.as_ptr() as *const *const i8,
             ..Default::default()
         };
 
@@ -83,30 +84,30 @@ impl ApplicationHandler for AppEvents {
                 None
             ).expect("Failed to create Vulkan surface")
         };
-        
+
         self.entry = Some(entry);
         self.instance = Some(instance);
         self.surface = surface;
         self.surface_loader = Some(ash::khr::surface::Instance::new(&self.entry.as_ref().unwrap(), &self.instance.as_ref().unwrap()));
-        
+
         println!("Vulkan surface & surface loader successfully created!");
-        
+
         let instance = self.instance.as_ref().unwrap();
         let physical_device = pick_physical_device(&instance);
 
-        let queue_family = find_queue_families(instance, physical_device, 
+        let queue_family = find_queue_families(instance, physical_device,
             self.surface, self.surface_loader.as_ref().unwrap().clone());
         let logical_device = create_logical_device(instance, physical_device, queue_family);
         self.logical_device = Some(logical_device.0);
-        
+
         println!("Logical Device properties: {:?}, {:?}", logical_device.1, logical_device.2);
-        
+
         let swapchain_stuff = create_swap_chain(
-            instance, 
-            self.logical_device.as_ref().unwrap().clone(), 
-            physical_device, 
-            surface, 
-            self.surface_loader.as_ref().unwrap().clone(), 
+            instance,
+            self.logical_device.as_ref().unwrap().clone(),
+            physical_device,
+            surface,
+            self.surface_loader.as_ref().unwrap().clone(),
             queue_family,
             window
         );
@@ -116,14 +117,14 @@ impl ApplicationHandler for AppEvents {
         println!("Created Swapchain");
 
         let swapchain_imageviews = create_image_views(
-            self.logical_device.as_ref().unwrap(), 
-            swapchain_stuff.swapchain_format, 
+            self.logical_device.as_ref().unwrap(),
+            swapchain_stuff.swapchain_format,
             &swapchain_stuff.swapchain_images
         );
         self.swapchain_imageviews = swapchain_imageviews;
 
         let render_pass = create_render_pass(
-            self.logical_device.as_ref().unwrap(), 
+            self.logical_device.as_ref().unwrap(),
             swapchain_stuff.swapchain_format
         );
         self.render_pass = render_pass;
@@ -193,21 +194,21 @@ fn required_extensions(window: &Window) -> Vec<*const c_char> {
     extensions
 }
 
-fn check_validation_layer_support(entry: &ash::Entry) -> bool {
-    let available_layers = unsafe {
-        entry.enumerate_instance_layer_properties().unwrap()
-    };
-    
-    for layer in &["VK_LAYER_KHRONOS_validation"] {
-        let found = available_layers.iter().any(|l| {
-            unsafe { CStr::from_ptr(l.layer_name.as_ptr()) }
-                .to_str()
-                .unwrap() == *layer
-        });
+// fn check_validation_layer_support(entry: &ash::Entry) -> bool {
+//     let available_layers = unsafe {
+//         entry.enumerate_instance_layer_properties().unwrap()
+//     };
 
-        if !found {
-            return false;
-        }
-    }
-    true
-}
+//     for layer in &["VK_LAYER_KHRONOS_validation"] {
+//         let found = available_layers.iter().any(|l| {
+//             unsafe { CStr::from_ptr(l.layer_name.as_ptr()) }
+//                 .to_str()
+//                 .unwrap() == *layer
+//         });
+
+//         if !found {
+//             return false;
+//         }
+//     }
+//     true
+// }
