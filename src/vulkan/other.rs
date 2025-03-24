@@ -1,6 +1,9 @@
 use std::{ffi::CString, fs::File, io::Read, path::Path, ptr};
 
 use ash::vk;
+use winit::window::Window;
+use crate::vulkan::swapchain::*;
+use crate::AppEvents;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 2;
 
@@ -530,7 +533,7 @@ pub fn create_command_buffers(
                 graphics_pipeline,
             );
 
-            // device.cmd_draw(command_buffer, 3, 1, 0, 0);
+            device.cmd_draw(command_buffer, 0, 1, 0, 0);
             
             device.cmd_end_render_pass(command_buffer);
             
@@ -541,4 +544,79 @@ pub fn create_command_buffers(
     }
 
     command_buffers
+}
+
+pub struct SurfaceStuff {
+    pub surface_loader: Option<ash::khr::surface::Instance>,
+    pub surface: vk::SurfaceKHR,
+    pub screen_width: u32,
+    pub screen_height: u32,
+}
+
+impl AppEvents {
+    fn recreate_swapchain(&mut self, window: &Window) {
+        // Parameters
+        let surface_suff = SurfaceStuff {
+            surface_loader: self.surface_loader.clone(),
+            surface: self.surface,
+            screen_width: window.inner_size().width,
+            screen_height: window.inner_size().height,
+        };
+
+        unsafe {
+            self.logical_device
+                .as_ref()
+                .unwrap()
+                .device_wait_idle()
+                .expect("Failed to wait device idle!")
+        };
+        // self.cleanup_swapchain();
+
+        let swapchain_stuff = create_swap_chain(
+            self.instance.as_ref().unwrap(),
+            self.logical_device.as_ref().unwrap().clone(),
+            self.physical_device,
+            self.surface,
+            self.surface_loader.as_ref().unwrap().clone(),
+            self.queue_family,
+            window,
+        );
+        self.swapchain_loader = Some(swapchain_stuff.swapchain_loader);
+        self.swapchain = swapchain_stuff.swapchain;
+        // self.swapchain_images = swapchain_stuff.swapchain_images;
+        // self.swapchain_format = swapchain_stuff.swapchain_format;
+        // self.swapchain_extent = swapchain_stuff.swapchain_extent;
+
+        // self.swapchain_imageviews = create_image_views(
+        //     self.logical_device.as_ref().unwrap(),
+        //     self.swapchain_format,
+        //     &self.swapchain_images,
+        // );
+        // self.render_pass = create_render_pass(
+        //     self.logical_device.as_ref().unwrap(),
+        //     self.swapchain_format,
+        // );
+        // let (graphics_pipeline, pipeline_layout) = create_graphics_pipeline(
+        //     self.logical_device.as_ref().unwrap(),
+        //     self.render_pass,
+        //     self.swapchain_extent,
+        // );
+        // self.graphics_pipeline = graphics_pipeline;
+        // self.pipeline_layout = pipeline_layout;
+
+        // self.swapchain_framebuffers = create_framebuffers(
+        //     self.logical_device.as_ref().unwrap(),
+        //     self.render_pass,
+        //     &self.swapchain_imageviews,
+        //     &self.swapchain_extent,
+        // );
+        // self.command_buffers = create_command_buffers(
+        //     self.logical_device.as_ref().unwrap(),
+        //     self.command_pool,
+        //     self.graphics_pipeline,
+        //     &self.swapchain_framebuffers,
+        //     self.render_pass,
+        //     self.swapchain_extent,
+        // );
+    }
 }

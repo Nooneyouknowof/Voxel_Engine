@@ -15,18 +15,20 @@ use std::{ffi::CString, os::raw::c_char};
 pub struct AppEvents {
     window: Option<Window>,
     entry: Option<Entry>,
-    instance: Option<Instance>,
-    surface: vk::SurfaceKHR,
-    surface_loader: Option<ash::khr::surface::Instance>,
-    swapchain: vk::SwapchainKHR,
-    swapchain_loader: Option<ash::khr::swapchain::Device>,
-    logical_device: Option<ash::Device>,
+    pub instance: Option<Instance>,
+    pub surface: vk::SurfaceKHR,
+    pub surface_loader: Option<ash::khr::surface::Instance>,
+    pub physical_device: vk::PhysicalDevice,
+    pub swapchain: vk::SwapchainKHR,
+    pub swapchain_loader: Option<ash::khr::swapchain::Device>,
+    pub logical_device: Option<ash::Device>,
     swapchain_imageviews: Vec<vk::ImageView>,
     render_pass: vk::RenderPass,
     pipeline_layout: vk::PipelineLayout,
     graphics_pipeline: vk::Pipeline,
     command_buffers: Vec<vk::CommandBuffer>,
     queue: vk::Queue,
+    pub queue_family: (u32, u32),
 
     image_available_semaphores: Vec<vk::Semaphore>,
     render_finished_semaphores: Vec<vk::Semaphore>,
@@ -101,9 +103,11 @@ impl ApplicationHandler for AppEvents {
 
         let instance = self.instance.as_ref().unwrap();
         let physical_device = pick_physical_device(&instance);
+        self.physical_device = physical_device;
 
         let queue_family = find_queue_families(instance, physical_device,
             self.surface, self.surface_loader.as_ref().unwrap().clone());
+        self.queue_family = queue_family;
         let logical_device = create_logical_device(instance, physical_device, queue_family);
         self.logical_device = Some(logical_device.0);
         self.queue = logical_device.1;
